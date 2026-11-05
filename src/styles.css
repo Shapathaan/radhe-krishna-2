@@ -395,3 +395,43 @@ body[data-tone='light'] .eyebrow { color: var(--gold-d); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
 }
+
+
+/* ───────── RK luxury entry loader ───────── */
+.site-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: var(--ivory);
+  background:
+    radial-gradient(ellipse at 50% 44%, rgba(37, 72, 52, .72), transparent 48%),
+    #0b2118;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity .72s cubic-bezier(.22,1,.36,1), visibility .72s;
+}
+.site-loader.is-leaving { opacity: 0; visibility: hidden; pointer-events: none; }
+.site-loader-inner { width: min(340px, 78vw); display: grid; justify-items: center; text-align: center; }
+.site-loader-mark {
+  width: 66px; height: 66px; display: grid; place-items: center;
+  border: 1px solid rgba(200,173,120,.72); border-radius: 50%;
+  color: var(--gold); font: 500 27px/1 var(--serif); letter-spacing: .04em;
+  box-shadow: 0 0 0 8px rgba(200,173,120,.035), inset 0 0 24px rgba(200,173,120,.06);
+  animation: rkMark 2.4s ease-in-out infinite;
+}
+.site-loader-rule { width: 100%; height: 1px; margin: 30px 0 19px; background: rgba(244,239,227,.15); overflow: hidden; }
+.site-loader-rule span { display: block; width: 34%; height: 100%; background: var(--gold); transform: translateX(-110%); animation: rkProgress 1.65s cubic-bezier(.6,0,.4,1) infinite; }
+.site-loader-inner p { margin: 0; color: var(--ivory); font: 500 17px/1.2 var(--serif); letter-spacing: .08em; }
+.site-loader-inner p i { display: block; margin-top: 6px; color: var(--gold); font: normal 9px/1.4 var(--sans); letter-spacing: .25em; }
+.site-loader-inner small { margin-top: 27px; color: rgba(244,239,227,.58); font: 10px/1.4 var(--sans); letter-spacing: .23em; }
+.mp-panel dd.estimate { color: var(--gold); font-weight: 500; }
+.mp-model-ref { display: block; margin-top: 6px; opacity: .72; font-size: 10px !important; letter-spacing: .1em; }
+.mp-estimate-note { margin-top: 12px; color: rgba(244,239,227,.55); font-size: 11px; line-height: 1.55; }
+@keyframes rkProgress { to { transform: translateX(330%); } }
+@keyframes rkMark { 0%,100% { transform: scale(1); opacity: .85; } 50% { transform: scale(1.045); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .site-loader-mark, .site-loader-rule span { animation: none; }
+}
