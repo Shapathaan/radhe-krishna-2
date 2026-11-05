@@ -17,21 +17,36 @@ import EnquiryModal from './components/EnquiryModal'
 export default function App() {
   const { lang } = useLang()
   const [enq, setEnq] = useState({ open: false, interest: '' })
+  const [loaderVisible, setLoaderVisible] = useState(true)
+  const [loaderExit, setLoaderExit] = useState(false)
   const openEnquiry = useCallback((interest = '') => setEnq({ open: true, interest: typeof interest === 'string' ? interest : '' }), [])
   const closeEnquiry = useCallback(() => setEnq((e) => ({ ...e, open: false })), [])
 
   useEffect(() => initSmoothScroll(), [])
 
-  /* ── Luxury loader ── */
-function Loader({ done }) {
-  return (
-    <div className={`loader${done ? ' hidden' : ''}`} aria-hidden="true">
-      <div className="loader-mark"><span>RK</span></div>
-      <div className="loader-line"/>
-      <span className="loader-text">Preparing your experience</span>
-    </div>
-  )
-}
+  useEffect(() => {
+    let minDone = false
+    let pageDone = document.readyState === 'complete'
+    let exitTimer
+    const minTimer = window.setTimeout(() => { minDone = true; finishIfReady() }, 1250)
+    const safetyTimer = window.setTimeout(() => { pageDone = true; minDone = true; finishIfReady() }, 4800)
+    const onLoad = () => { pageDone = true; finishIfReady() }
+    function finishIfReady() {
+      if (!minDone || !pageDone) return
+      setLoaderExit(true)
+      exitTimer = window.setTimeout(() => setLoaderVisible(false), 760)
+    }
+    if (!pageDone) window.addEventListener('load', onLoad, { once: true })
+    else { pageDone = true }
+    return () => {
+      window.clearTimeout(minTimer)
+      window.clearTimeout(safetyTimer)
+      window.clearTimeout(exitTimer)
+      window.removeEventListener('load', onLoad)
+    }
+  }, [])
+
+  /* ── Luxury entry loader ── */
   // Global scroll choreography: reveals, headings, dividers, tone transitions.
   useLayoutEffect(() => {
     const reduced = prefersReduced()
@@ -74,6 +89,16 @@ function Loader({ done }) {
 
   return (
     <>
+      {loaderVisible && (
+        <div className={`site-loader${loaderExit ? ' is-leaving' : ''}`} role="status" aria-label="Preparing your experience">
+          <div className="site-loader-inner">
+            <div className="site-loader-mark">RK</div>
+            <div className="site-loader-rule"><span /></div>
+            <p>{lang === 'gu' ? 'રાધે કૃષ્ણા' : 'RADHE KRISHNA'} <i>RESIDENCY · PHASE 02</i></p>
+            <small>{lang === 'gu' ? 'તમારો અનુભવ તૈયાર થઈ રહ્યો છે' : 'PREPARING YOUR EXPERIENCE'}</small>
+          </div>
+        </div>
+      )}
       <Cursor />
       <Nav onEnquire={openEnquiry} />
       <main>
