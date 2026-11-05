@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
+import { OrbitControls, Text } from '@react-three/drei'
 import * as THREE from 'three'
 import { RotateCcw, Play, Square, Orbit, X, ArrowLeft, MessageCircle } from 'lucide-react'
 import { SITE_OUTLINE, ROAD, ROAD_CENTERLINES, PLOTS, COMMONS } from '../data/siteGeometry'
@@ -33,6 +33,17 @@ const bounds = (pts) => {
   let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity
   pts.forEach(([x, z]) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z) })
   return { x0, x1, z0, z1, cx: (x0 + x1) / 2, cz: (z0 + z1) / 2, w: x1 - x0, h: z1 - z0 }
+}
+// The source geometry is raster-traced and explicitly illustrative. These
+// figures are visual estimates from its 1 scene-unit = 10 ft scale, not legal dimensions.
+function polygonAreaSqft(points) {
+  let area = 0
+  for (let i = 0; i < points.length; i++) {
+    const [x1, z1] = points[i]
+    const [x2, z2] = points[(i + 1) % points.length]
+    area += x1 * z2 - x2 * z1
+  }
+  return Math.round(Math.abs(area) * 50)
 }
 function inPoly(x, z, poly) {
   let c = false
@@ -238,6 +249,7 @@ function Tracers({ tl }) {
 
 function Plots({ tl, geo, mobile, selected, hovered, zoneHL, onHover, onPick }) {
   const refs = useRef([])
+  const faceRefs = useRef([])
   const order = useMemo(() => {
     const idx = PLOTS.map((p, i) => [p.c[0], i]).sort((a, b) => a[0] - b[0])
     const r = new Array(PLOTS.length)
@@ -251,24 +263,34 @@ function Plots({ tl, geo, mobile, selected, hovered, zoneHL, onHover, onPick }) 
     sel: new THREE.MeshStandardMaterial({ color: '#c8ad78', roughness: 0.45, emissive: '#8a6c2a', emissiveIntensity: 0.55 }),
   }), [])
   useEffect(() => () => Object.values(mats).forEach((m) => m.dispose()), [mats])
-  useFrame(() => {
+  useFrame((_, dt) => {
     const t = tl.current.t
-    PLOTS.forEach((_, i) => {
-      const m = refs.current[i]
-      if (!m) return
+    PLOTS.forEach((plot, i) => {
+      const root = refs.current[i]
+      const face = faceRefs.current[i]
+      if (!root || !face) return
       const s = ease(prog(t, T.plots + order[i] * 0.018, T.plots + order[i] * 0.018 + 0.7))
-      m.scale.y = Math.max(s, 0.0001)
-      m.visible = s > 0
+      face.scale.y = Math.max(s, 0.0001)
+      root.visible = s > 0
+      // Premium hover/select response: lift and subtly enlarge without changing geometry.
+      const active = selected === plot.id
+      const over = hovered === plot.id
+      const targetY = active ? GROUND_H + 0.34 : over ? GROUND_H + 0.16 : GROUND_H
+      const targetXZ = active ? 1.035 : over ? 1.018 : 1
+      const k = 1 - Math.exp(-Math.min(dt, 0.05) * 13)
+      root.position.y += (targetY - root.position.y) * k
+      root.scale.x += (targetXZ - root.scale.x) * k
+      root.scale.z += (targetXZ - root.scale.z) * k
     })
   })
   const matFor = (p) => (selected === p.id ? mats.sel : hovered === p.id ? mats.hover : zoneHL && zoneHL === p.zone ? mats.zone : mats.base)
   return PLOTS.map((p, i) => (
+    <group key={p.id} ref={(el) => (refs.current[i] = el)} position={[0, GROUND_H, 0]}>
     <mesh
-      key={p.id}
-      ref={(el) => (refs.current[i] = el)}
+      ref={(el) => (faceRefs.current[i] = el)}
       geometry={geo.plots[i]}
       material={matFor(p)}
-      position={[0, GROUND_H, 0]}
+      position={[0, 0, 0]}
       scale={[1, 0.0001, 1]}
       castShadow={!mobile}
       receiveShadow
@@ -276,6 +298,21 @@ function Plots({ tl, geo, mobile, selected, hovered, zoneHL, onHover, onPick }) 
       onPointerOut={() => { onHover(null); window.dispatchEvent(new CustomEvent('rkr-cursor', { detail: 'drag' })) }}
       onClick={(e) => { e.stopPropagation(); if (e.delta < 6) onPick(p.id) }}
     />
+      <Text
+        position={[p.c[0], PLOT_H + 0.035, p.c[1]]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        fontSize={0.28}
+        color={selected === p.id || hovered === p.id ? '#493719' : '#354238'}
+        anchorX="center"
+        anchorY="middle"
+        outlineWidth={0.012}
+        outlineColor="#f4eddb"
+        depthOffset={-2}
+        raycast={() => null}
+      >
+        {p.id}
+      </Text>
+    </group>
   ))
 }
 
@@ -453,7 +490,14 @@ function Scene({ tl, geo, mobile, ui, rig, controlsEnabled, autoRotate, compassE
 function describe(id, t) {
   const plot = PLOTS.find((p) => p.id === id)
   if (plot) {
-    const d = PLOT_DETAILS[id] || {}
+    const stored = PLOT_DETAILS[id] || {}
+    const box = bounds(plot.p)
+    const d = {
+      ...stored,
+      modelAreaSqft: polygonAreaSqft(plot.p),
+      modelWidthFt: Math.round(box.w * 10),
+      modelDepthFt: Math.round(box.h * 10),
+    }
     return { kind: 'plot', title: d.number ? `${t.plan.plot} ${d.number}` : `${t.plan.plot} · ${plot.id}`, zone: t.plan.zones[plot.zone], d, c: plot.c, verified: !!d.number, geometryId: plot.id }
   }
   const com = COMMONS.find((c) => c.id === id)
@@ -609,7 +653,7 @@ export default function MasterPlanExperience({ onEnquire, onReady }) {
             <small>{shown.kind === 'common' ? t.plan.commonPlot : t.plan.plot}</small>
             <h3>{shown.title}</h3>
             <span className="zone">{shown.zone}</span>
-            {shown.kind === 'plot' && !shown.d.number && <span className="zone" style={{display:'block',marginTop:6,opacity:.65,fontSize:10,letterSpacing:'.08em'}}>MODEL REFERENCE · {shown.geometryId}</span>}
+            {shown.kind === 'plot' && !shown.d.number && <span className="zone mp-model-ref">{t.plan.modelRef}: {shown.geometryId}</span>}
           </header>
           <dl>
             {shown.kind === 'plot' && (
@@ -617,7 +661,7 @@ export default function MasterPlanExperience({ onEnquire, onReady }) {
             )}
             <div>
               <dt>{t.plan.area}</dt>
-              <dd className={shown.d.areaSqft ? '' : 'muted'}>{shown.d.areaSqft ? `${shown.d.areaSqft.toLocaleString('en-IN')} ${t.plan.sqft}` : t.plan.pending}</dd>
+              <dd className={shown.d.areaSqft ? '' : 'estimate'}>{shown.d.areaSqft ? `${shown.d.areaSqft.toLocaleString('en-IN')} ${t.plan.sqft}` : `~${shown.d.modelAreaSqft.toLocaleString('en-IN')} ${t.plan.sqft}`}</dd>
             </div>
             {shown.kind === 'plot' && (
               <div><dt>{t.plan.dims}</dt><dd className={shown.d.widthFt ? '' : 'muted'}>{shown.d.widthFt ? `${shown.d.widthFt} × ${shown.d.depthFt} ft` : t.plan.pending}</dd></div>
@@ -626,6 +670,7 @@ export default function MasterPlanExperience({ onEnquire, onReady }) {
               <div><dt>{t.plan.status}</dt><dd className="muted">{AVAILABILITY_CONNECTED && shown.d.status ? shown.d.status : t.plan.notConnected}</dd></div>
             )}
           </dl>
+          {shown.kind === 'plot' && <p className="mp-estimate-note">{t.plan.modelEstimateNote}</p>}
           {selected && (
             <footer>
               <button type="button" className="btn-solid sm" onClick={() => onEnquire && onEnquire(`${shown.zone}${shown.d.number ? ' · ' + shown.d.number : ''} (3D model)`)}>
