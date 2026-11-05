@@ -454,7 +454,7 @@ function describe(id, t) {
   const plot = PLOTS.find((p) => p.id === id)
   if (plot) {
     const d = PLOT_DETAILS[id] || {}
-    return { kind: 'plot', title: d.number ? `${t.plan.plot} ${d.number}` : t.plan.plot, zone: t.plan.zones[plot.zone], d, c: plot.c, verified: !!d.number }
+    return { kind: 'plot', title: d.number ? `${t.plan.plot} ${d.number}` : `${t.plan.plot} · ${plot.id}`, zone: t.plan.zones[plot.zone], d, c: plot.c, verified: !!d.number, geometryId: plot.id }
   }
   const com = COMMONS.find((c) => c.id === id)
   if (com) return { kind: 'common', title: COMMON_DETAILS[id]?.name || t.plan.commonPlot, zone: t.plan.zones.commons, d: { areaSqft: COMMON_DETAILS[id]?.areaSqft }, c: com.c, verified: true }
@@ -609,6 +609,7 @@ export default function MasterPlanExperience({ onEnquire, onReady }) {
             <small>{shown.kind === 'common' ? t.plan.commonPlot : t.plan.plot}</small>
             <h3>{shown.title}</h3>
             <span className="zone">{shown.zone}</span>
+            {shown.kind === 'plot' && !shown.d.number && <span className="zone" style={{display:'block',marginTop:6,opacity:.65,fontSize:10,letterSpacing:'.08em'}}>MODEL REFERENCE · {shown.geometryId}</span>}
           </header>
           <dl>
             {shown.kind === 'plot' && (
