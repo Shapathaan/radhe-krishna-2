@@ -22,6 +22,16 @@ export default function App() {
 
   useEffect(() => initSmoothScroll(), [])
 
+  /* ── Luxury loader ── */
+function Loader({ done }) {
+  return (
+    <div className={`loader${done ? ' hidden' : ''}`} aria-hidden="true">
+      <div className="loader-mark"><span>RK</span></div>
+      <div className="loader-line"/>
+      <span className="loader-text">Preparing your experience</span>
+    </div>
+  )
+}
   // Global scroll choreography: reveals, headings, dividers, tone transitions.
   useLayoutEffect(() => {
     const reduced = prefersReduced()
