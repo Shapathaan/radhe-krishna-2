@@ -111,7 +111,7 @@ export default function Hero({ onEnquire }) {
   return (
     <section id="top" ref={root} className="hero" data-tone="dark">
       <div className="hero-inner">
-        <div className="hero-bg" aria-hidden="true"><img src="/assets/site-02.jpeg" alt="" fetchpriority="high" decoding="async" /></div>
+        <div className="hero-bg" aria-hidden="true"><img src={`${import.meta.env.BASE_URL}assets/site-02.jpeg`} alt="" fetchpriority="high" decoding="async" /></div>
         <div className="hero-shade" aria-hidden="true" />
         <div className="hero-grid" aria-hidden="true" />
 

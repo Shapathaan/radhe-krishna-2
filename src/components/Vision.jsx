@@ -3,7 +3,7 @@ import { gsap } from '../lib/motion'
 import { useLang } from '../lib/i18n'
 import SplitText from './SplitText'
 
-const IMGS = ['/assets/site-03.jpeg', '/assets/site-04.jpeg', '/assets/site-06.jpeg']
+const IMGS = ['site-03.jpeg', 'site-04.jpeg', 'site-06.jpeg'].map((name) => `${import.meta.env.BASE_URL}assets/${name}`)
 
 export default function Vision() {
   const { t } = useLang()

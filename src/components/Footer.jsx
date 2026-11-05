@@ -19,7 +19,7 @@ export default function Footer({ onEnquire }) {
   }, [])
   return (
     <footer ref={root} className="cta" data-tone="dark">
-      <div className="cta-bg" aria-hidden="true"><img src="/assets/site-05.jpeg" alt="" loading="lazy" decoding="async" /></div>
+      <div className="cta-bg" aria-hidden="true"><img src={`${import.meta.env.BASE_URL}assets/site-05.jpeg`} alt="" loading="lazy" decoding="async" /></div>
       <div className="cta-shade" aria-hidden="true" />
       <div className="wrap cta-body">
         <p className="eyebrow" data-reveal>{t.cta.eyebrow}</p>
