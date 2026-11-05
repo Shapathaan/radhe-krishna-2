@@ -10,13 +10,13 @@ export const PROJECT = {
   // Exact coordinates are NOT known. Add { lat, lng } here once verified and the
   // location section will place a pin automatically.
   coordinates: null,
-  brochureUrl: '/assets/radhe-krishna-brochure.pdf',
-  planImage: '/assets/plan-2.png',
-  film: { src: '/assets/project-film.mp4', poster: '/assets/film-poster.jpg', hasAudio: false },
+  brochureUrl: `${import.meta.env.BASE_URL}assets/radhe-krishna-brochure.pdf`,
+  planImage: `${import.meta.env.BASE_URL}assets/plan-2.png`,
+  film: { src: `${import.meta.env.BASE_URL}assets/project-film.mp4`, poster: `${import.meta.env.BASE_URL}assets/film-poster.jpg`, hasAudio: false },
 }
 
 export const GALLERY = ['02', '03', '04', '05', '06', '07'].map((n, i) => ({
   id: n,
-  src: `/assets/site-${n}.jpeg`,
+  src: `${import.meta.env.BASE_URL}assets/site-${n}.jpeg`,
   key: `g${i + 1}`,
 }))
